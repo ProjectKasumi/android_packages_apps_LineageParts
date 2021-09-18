@@ -62,12 +62,7 @@ public class PerfProfileSettings extends SettingsPreferenceFragment
         implements Preference.OnPreferenceChangeListener, Searchable {
 
     private static final String KEY_PERF_PROFILE_CATEGORY = "perf_profile_category";
-    private static final String KEY_AUTO_POWER_SAVE  = "auto_power_save";
-    private static final String KEY_POWER_SAVE       = "power_save";
     private static final String KEY_PERF_SEEKBAR     = "perf_seekbar";
-
-    private ListPreference mAutoPowerSavePref;
-    private SwitchPreference   mPowerSavePref;
 
     private SeekBarPreference        mPerfSeekBar;
     private StopMotionVectorDrawable mPerfDrawable;
@@ -94,8 +89,6 @@ public class PerfProfileSettings extends SettingsPreferenceFragment
         addPreferencesFromResource(R.xml.perf_profile_settings);
 
         mPerfSeekBar = findPreference(KEY_PERF_SEEKBAR);
-        mAutoPowerSavePref = findPreference(KEY_AUTO_POWER_SAVE);
-        mPowerSavePref = findPreference(KEY_POWER_SAVE);
 
         mPowerManager = getActivity().getSystemService(PowerManager.class);
         mPerf = PerformanceManager.getInstance(getActivity());
@@ -120,12 +113,6 @@ public class PerfProfileSettings extends SettingsPreferenceFragment
 
             watch(LineageSettings.Secure.getUriFor(LineageSettings.Secure.PERFORMANCE_PROFILE));
         }
-
-        mAutoPowerSavePref.setEntries(R.array.auto_power_save_entries);
-        mAutoPowerSavePref.setEntryValues(R.array.auto_power_save_values);
-        updateAutoPowerSaveValue();
-        mAutoPowerSavePref.setOnPreferenceChangeListener(this);
-        mPowerSavePref.setOnPreferenceChangeListener(this);
     }
 
 
@@ -206,21 +193,15 @@ public class PerfProfileSettings extends SettingsPreferenceFragment
     @Override
     public void onResume() {
         super.onResume();
-
-        if (mPowerSavePref != null) {
-            updatePowerSaveValue();
-            getActivity().registerReceiver(mPowerSaveReceiver,
+        updatePowerSaveValue();
+        getActivity().registerReceiver(mPowerSaveReceiver,
                     new IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGING));
-        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-
-        if (mPowerSavePref != null) {
-            getActivity().unregisterReceiver(mPowerSaveReceiver);
-        }
+	getActivity().unregisterReceiver(mPowerSaveReceiver);
     }
 
     @Override
@@ -234,18 +215,6 @@ public class PerfProfileSettings extends SettingsPreferenceFragment
                         R.string.perf_profile_fail_toast, Toast.LENGTH_SHORT).show();
                 return false;
             }
-        } else if (preference == mPowerSavePref) {
-            if (!mPowerManager.setPowerSaveModeEnabled((boolean) newValue)) {
-                // Don't just fail silently, inform the user as well
-                Toast.makeText(getActivity(),
-                        R.string.perf_profile_fail_toast, Toast.LENGTH_SHORT).show();
-                return false;
-            }
-            updatePowerSaveValue();
-        } else if (preference == mAutoPowerSavePref) {
-            final int level = Integer.parseInt((String) newValue);
-            Global.putInt(getContentResolver(), Global.LOW_POWER_MODE_TRIGGER_LEVEL, level);
-            updateAutoPowerSaveSummary(level);
         }
         return true;
     }
@@ -257,23 +226,9 @@ public class PerfProfileSettings extends SettingsPreferenceFragment
     }
 
     private void updatePowerSaveValue() {
-        mPowerSavePref.setChecked(mPowerManager.isPowerSaveMode());
         updatePerfSettings();
         // The profile was changed automatically without updating the preference
         PartsUpdater.notifyChanged(getActivity(), getPreferenceScreen().getKey());
-    }
-
-    private void updateAutoPowerSaveValue() {
-        final int level = Global.getInt(
-                getContentResolver(), Global.LOW_POWER_MODE_TRIGGER_LEVEL, 0);
-        mAutoPowerSavePref.setValue(String.valueOf(level));
-        updateAutoPowerSaveSummary(level);
-    }
-
-    private void updateAutoPowerSaveSummary(int level) {
-        mAutoPowerSavePref.setSummary(level == 0
-                ? R.string.auto_power_save_summary_off
-                : R.string.auto_power_save_summary_on);
     }
 
     public static final SummaryProvider SUMMARY_PROVIDER = new SummaryProvider() {
