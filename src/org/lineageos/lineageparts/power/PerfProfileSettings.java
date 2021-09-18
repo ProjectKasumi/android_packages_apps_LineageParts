@@ -260,7 +260,7 @@ public class PerfProfileSettings extends SettingsPreferenceFragment
             final List<PerformanceProfile> profiles =
                     new ArrayList<>(perfManager.getPowerProfiles());
 
-            if (profiles.size() == 0) {
+            if (profiles.size() > 0) {
                 result.add(KEY_PERF_PROFILE_CATEGORY);
                 result.add(KEY_PERF_SEEKBAR);
             }
